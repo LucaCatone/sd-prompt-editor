@@ -1,7 +1,7 @@
 <template>
 	<q-layout view="hHh lpR fFf">
 
-		<q-header bordered class="bg-primary text-white" height-hint="98">
+		<q-header bordered class="bg-red text-white" height-hint="98">
 			<q-bar class="q-electron-drag">
 				<q-icon name="laptop_chromebook" />
 				<div>SD Prompt Editor</div>
@@ -22,10 +22,6 @@
 								<q-item-section>Open folder...</q-item-section>
 							</q-item>
 
-							<q-item clickable v-close-popup>
-								<q-item-section>Save all</q-item-section>
-							</q-item>
-
 							<q-separator />
 
 							<q-item clickable v-close-popup @click="closeApp">
@@ -38,21 +34,24 @@
 		</q-header>
 
 		<q-drawer show-if-above v-model="leftDrawerOpen" side="left" bordered>
-			<div class="q-pa-md-12">
-				<q-list bordered class="rounded-borders text-primary">
-					<q-item v-for="(file, index) in txtFiles"
+			<div class="">
+				<q-list class="rounded-borders text-primary">
+					<q-item v-for="(files, index) in groupedFiles"
 						clickable
 						v-ripple
+						active-class="my-menu-link"
+						:active="selectedFiles === files"
+						@click="ChangeSelectedFile(files)"
 						:key="index"
 					>
-						<q-item-section>{{file}}</q-item-section>
+						<q-item-section>{{ files[0].name }}</q-item-section>
 					</q-item>
 				</q-list>
 			</div>
 		</q-drawer>
 
 		<q-page-container>
-		  <!-- <router-view /> -->
+		  <router-view :selectedFolder="selectedFolder" :selectedFiles="selectedFiles" />
 		</q-page-container>
 
 	  </q-layout>
@@ -60,83 +59,124 @@
 
 <script>
 import { ref } from 'vue'
+import natsort from 'natsort'
+import { useQuasar } from 'quasar'
+import "core-js";
+
 const fs = window.electronFs;
 const path = window.electronPath;
 
 export default {
-  components: {},
+	components: {},
 
-  setup () {
-	const leftDrawerOpen = ref(false)
-	const selectedFolder = ref({})
+	setup () {
+		const leftDrawerOpen = ref(false)
+		const selectedFolder = ref({})
+		const $q = useQuasar()
 
-	/**
-	 * Window bar
-	 */
+		// set status
+		$q.dark.set(true) // or false or "auto"
 
-	function minimize () {
-	  if (process.env.MODE === 'electron') {
-		window.myWindowAPI.minimize()
-	  }
-	}
+		/**
+		 * Window bar
+		 */
 
-	function toggleMaximize () {
-	  if (process.env.MODE === 'electron') {
-		window.myWindowAPI.toggleMaximize()
-	  }
-	}
+		function minimize () {
+			if (process.env.MODE === 'electron') {
+			window.myWindowAPI.minimize()
+			}
+		}
 
-	function closeApp () {
-	  if (process.env.MODE === 'electron') {
-		window.myWindowAPI.close()
-	  }
-	}
+		function toggleMaximize () {
+			if (process.env.MODE === 'electron') {
+			window.myWindowAPI.toggleMaximize()
+			}
+		}
 
-	/**
-	 * File explorer
-	 */
-	function openFileExplorer() {
-		window.dialogApi
-			.openDialog()
-			.then((directory) => {
-				selectedFolder.value = directory;
-			})
-	}
+		function closeApp () {
+			if (process.env.MODE === 'electron') {
+			window.myWindowAPI.close()
+			}
+		}
 
-	return {
-	  leftDrawerOpen,
+		/**
+		 * File explorer
+		 */
+		function openFileExplorer() {
+			window.dialogApi
+				.openDialog()
+				.then((directory) => {
+					if (!directory.canceled) {
+						selectedFolder.value = directory.filePaths;
+					}
+				})
+		}
 
-	  minimize,
-	  toggleMaximize,
-	  closeApp,
+		return {
+			leftDrawerOpen,
 
-	  openFileExplorer,
-	  selectedFolder,
+			minimize,
+			toggleMaximize,
+			closeApp,
 
-	  toggleLeftDrawer () {
-		leftDrawerOpen.value = !leftDrawerOpen.value
-	  }
-	}
-  },
+			openFileExplorer,
+			selectedFolder,
 
-  data() {
-	return {
-		fileList: [],
-		txtFiles: []
-	}
-  },
-
-  watch: {
-	selectedFolder() {
-		this.fileList = []
-		this.txtFiles = []
-
-		this.fileList = fs.readdirSync(this.selectedFolder.filePaths[0])
-		this.fileList.forEach(element => {
-			if (path.extname(element) == ".txt")
-    			this.txtFiles.push(element)
-		});
+			toggleLeftDrawer () {
+			leftDrawerOpen.value = !leftDrawerOpen.value
+			}
+		}
 	},
-  }
+
+	data() {
+		return {
+			fileList: [],
+			groupedFiles: [],
+			selectedFiles: ''
+		}
+	},
+
+	watch: {
+		selectedFolder() {
+			this.fileList = []
+			this.groupedFiles = []
+
+			if (Object.keys(this.selectedFolder).length) {
+				this.selectedFiles = '';
+				this.fileList = fs.readdirSync(this.selectedFolder[0])
+				 
+				// Creo un array in cui ogni file è classificato
+				// in modo tale da poter raggruppare file successivamente
+				let classifiedFilesList = []
+				this.fileList.forEach(element => {
+					// Trovo il nome del file
+					let fileName = path.basename(element, path.extname(element))
+					let extName = path.extname(element)
+					// Aggiungo il file all'array con le classificazioni
+					classifiedFilesList.push({ name: fileName, ext: extName })
+				});
+
+				// Raggruppo l'array per filename
+				this.groupedFiles = classifiedFilesList.group(file => {
+					return file.name;
+				});
+				
+				// Converto tuto in un array per poterlo ordinare
+				this.groupedFiles = Object.values(this.groupedFiles);
+				
+				var sorter = natsort();
+				this.groupedFiles = this.groupedFiles.sort(function(a, b) {
+					return sorter(a[0].name, b[0].name);
+				});
+			}
+		}
+	},
+
+	methods: {
+		ChangeSelectedFile(files) {
+			this.selectedFiles = files;
+		}
+	}
+  
 }
 </script>
