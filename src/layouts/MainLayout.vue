@@ -1,65 +1,142 @@
 <template>
-  <q-layout view="hHh lpR fFf">
+	<q-layout view="hHh lpR fFf">
 
-    <q-header bordered class="bg-primary text-white" height-hint="98">
-      <q-toolbar>
-        <q-btn dense flat round icon="menu" @click="toggleLeftDrawer" />
+		<q-header bordered class="bg-primary text-white" height-hint="98">
+			<q-bar class="q-electron-drag">
+				<q-icon name="laptop_chromebook" />
+				<div>SD Prompt Editor</div>
 
-        <q-toolbar-title>
-          <!-- <q-avatar>
-            <img src="https://cdn.quasar.dev/logo-v2/svg/logo-mono-white.svg">
-          </q-avatar> -->
-          SD Prompt Editor
-        </q-toolbar-title>
-      </q-toolbar>
-    </q-header>
+				<q-space />
 
-    <q-drawer show-if-above v-model="leftDrawerOpen" side="left" bordered>
-      <div class="q-pa-md bg-grey-12">
-        <h6 class="q-my-none">Select files</h6>
-        <p class="text-blue-grey-14">To open a folder, select one of the file in it.</p>
-        <q-file outlined multiple display-value="Select the images and txts" counter v-model="projectFolder" label="Select multiple files">
-          <template v-slot:prepend>
-            <q-icon name="attach_file" />
-          </template>
-        </q-file>
-      </div>
-    </q-drawer>
+				<q-btn dense flat icon="minimize" @click="minimize" />
+				<q-btn dense flat icon="crop_square" @click="toggleMaximize" />
+				<q-btn dense flat icon="close" @click="closeApp" />
+			</q-bar>
 
-    <q-page-container>
-      <router-view />
-    </q-page-container>
+			<div class="q-pa-sm q-pl-md row items-center">
+				<div class="cursor-pointer non-selectable">
+					File
+					<q-menu>
+						<q-list dense style="min-width: 100px">
+							<q-item clickable v-close-popup @click="openFileExplorer">
+								<q-item-section>Open folder...</q-item-section>
+							</q-item>
 
-  </q-layout>
+							<q-item clickable v-close-popup>
+								<q-item-section>Save all</q-item-section>
+							</q-item>
+
+							<q-separator />
+
+							<q-item clickable v-close-popup @click="closeApp">
+								<q-item-section>Quit</q-item-section>
+							</q-item>
+						</q-list>
+					</q-menu>
+				</div>
+			</div>
+		</q-header>
+
+		<q-drawer show-if-above v-model="leftDrawerOpen" side="left" bordered>
+			<div class="q-pa-md-12">
+				<q-list bordered class="rounded-borders text-primary">
+					<q-item v-for="(file, index) in txtFiles"
+						clickable
+						v-ripple
+						:key="index"
+					>
+						<q-item-section>{{file}}</q-item-section>
+					</q-item>
+				</q-list>
+			</div>
+		</q-drawer>
+
+		<q-page-container>
+		  <!-- <router-view /> -->
+		</q-page-container>
+
+	  </q-layout>
 </template>
 
 <script>
 import { ref } from 'vue'
+const fs = window.electronFs;
+const path = window.electronPath;
 
 export default {
-  setup () {
-    const leftDrawerOpen = ref(false)
-    const projectFolder = ref('');
+  components: {},
 
-    return {
-      projectFolder: projectFolder,
-      leftDrawerOpen,
-      toggleLeftDrawer () {
-        leftDrawerOpen.value = !leftDrawerOpen.value
-      }
-    }
+  setup () {
+	const leftDrawerOpen = ref(false)
+	const selectedFolder = ref({})
+
+	/**
+	 * Window bar
+	 */
+
+	function minimize () {
+	  if (process.env.MODE === 'electron') {
+		window.myWindowAPI.minimize()
+	  }
+	}
+
+	function toggleMaximize () {
+	  if (process.env.MODE === 'electron') {
+		window.myWindowAPI.toggleMaximize()
+	  }
+	}
+
+	function closeApp () {
+	  if (process.env.MODE === 'electron') {
+		window.myWindowAPI.close()
+	  }
+	}
+
+	/**
+	 * File explorer
+	 */
+	function openFileExplorer() {
+		window.dialogApi
+			.openDialog()
+			.then((directory) => {
+				selectedFolder.value = directory;
+			})
+	}
+
+	return {
+	  leftDrawerOpen,
+
+	  minimize,
+	  toggleMaximize,
+	  closeApp,
+
+	  openFileExplorer,
+	  selectedFolder,
+
+	  toggleLeftDrawer () {
+		leftDrawerOpen.value = !leftDrawerOpen.value
+	  }
+	}
   },
 
   data() {
-    return {
-      
-    }
+	return {
+		fileList: [],
+		txtFiles: []
+	}
   },
 
   watch: {
-    projectFolder() {
-      console.log(this.projectFolder)
-    },
+	selectedFolder() {
+		this.fileList = []
+		this.txtFiles = []
+
+		this.fileList = fs.readdirSync(this.selectedFolder.filePaths[0])
+		this.fileList.forEach(element => {
+			if (path.extname(element) == ".txt")
+    			this.txtFiles.push(element)
+		});
+	},
   }
 }
 </script>
