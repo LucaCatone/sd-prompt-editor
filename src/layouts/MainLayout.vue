@@ -132,7 +132,8 @@ export default {
 		return {
 			fileList: [],
 			groupedFiles: [],
-			selectedFiles: ''
+			selectedFiles: '',
+			folderContent: this.selectedFolder.lenght ? fs.readdirSync(this.selectedFolder[0]) : null
 		}
 	},
 

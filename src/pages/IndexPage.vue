@@ -8,9 +8,14 @@
 				</div>
 			</div>
 
-			<div class="col bg-dark-separator" v-if="txtFile.length" style="min-height: inherit;">
+			<div class="col bg-dark-separator" v-if="selectedFiles != ''" style="min-height: inherit;">
 				<div class="q-pa-lg">
-					{{ txtFile[0].content }}
+					<q-input
+						v-model="txtContent"
+						filled
+						autogrow
+						type="textarea"
+					/>
 				</div>
 			</div>
 		</div>
@@ -42,7 +47,8 @@ export default defineComponent({
 	data() {
 		return {
 			images: [],
-			txtFile: []
+			txtFile: [],
+			txtContent: ''
 		}
 	},
 
@@ -50,6 +56,7 @@ export default defineComponent({
 		selectedFiles() {
 			this.images = []
 			this.txtFile = []
+			this.txtContent = ''
 
 			// Ciclo tutti i file e divido le immagini dal txt
 			// { name: 'name of the file', ext: '.txt' }
@@ -60,12 +67,26 @@ export default defineComponent({
 					this.images.push(element);
 				
 				} else if (mimeType == 'text/plain') {
+					var content = fs.readFileSync(this.selectedFolder +'\\' + element.name + element.ext, 'utf-8')
+
 					this.txtFile.push({
 						file: element,
-						content: fs.readFileSync(this.selectedFolder +'\\' + element.name + element.ext, 'utf-8')
+						content: content
 					});
+
+					this.txtContent = content
 				}
 			});
+		},
+
+		txtContent() {
+			if (this.txtFile.length) {
+				fs.writeFileSync(this.selectedFolder +'\\' + this.txtFile[0].file.name + this.txtFile[0].file.ext, this.txtContent)
+			} else {
+				if (this.images.length) {
+					fs.writeFileSync(this.selectedFolder +'\\' + this.images[0].name + '.txt', this.txtContent)
+				}
+			}
 		}
 	},
 

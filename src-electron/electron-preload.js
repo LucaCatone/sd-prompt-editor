@@ -53,6 +53,7 @@ contextBridge.exposeInMainWorld('NodeUrl', {
 contextBridge.exposeInMainWorld('electronFs', {
   readFileSync: fs.readFileSync,
   existsSync: fs.existsSync,
-  readdirSync: fs.readdirSync
+  readdirSync: fs.readdirSync,
+  writeFileSync: fs.writeFileSync
   // Other fs methods here
 })
