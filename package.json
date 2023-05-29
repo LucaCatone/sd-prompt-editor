@@ -11,7 +11,8 @@
     "test": "echo \"No test specified\" && exit 0",
     "dev": "quasar dev",
     "build": "quasar build",
-    "electron:dev": "quasar dev -m electron"
+    "electron:dev": "quasar dev -m electron",
+    "electron:build": "quasar build -m electron"
   },
   "dependencies": {
     "@electron/remote": "^2.0.9",
