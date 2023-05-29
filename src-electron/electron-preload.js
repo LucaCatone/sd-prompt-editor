@@ -2,11 +2,11 @@
 
 import { contextBridge } from 'electron'
 import { BrowserWindow, dialog } from '@electron/remote'
-import { pathToFileURL } from 'url';
 
 const fs = require('fs')
 const path = require('path')
 const mime = require('mime-types')
+const url = require('url')
 window.electron = require('electron')
 
 contextBridge.exposeInMainWorld('myWindowAPI', {
@@ -39,7 +39,8 @@ contextBridge.exposeInMainWorld('dialogApi', {
 
 contextBridge.exposeInMainWorld('electronPath', {
   extname: path.extname,
-  basename: path.basename
+  basename: path.basename,
+  join: path.join
 })
 
 contextBridge.exposeInMainWorld('mimeTypes', {
@@ -47,13 +48,19 @@ contextBridge.exposeInMainWorld('mimeTypes', {
 })
 
 contextBridge.exposeInMainWorld('NodeUrl', {
-  pathToFileURL: pathToFileURL,
+  pathToFileURL(path) {
+    return url.pathToFileURL(path).href
+  }
 })
 
 contextBridge.exposeInMainWorld('electronFs', {
   readFileSync: fs.readFileSync,
   existsSync: fs.existsSync,
   readdirSync: fs.readdirSync,
-  writeFileSync: fs.writeFileSync
+  writeFileSync: fs.writeFileSync,
+
+  IsDirectory(path) {
+    return fs.lstatSync(path).isDirectory()
+  }
   // Other fs methods here
 })

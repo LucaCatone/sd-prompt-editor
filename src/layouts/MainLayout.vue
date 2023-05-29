@@ -107,7 +107,7 @@ export default {
 				.openDialog()
 				.then((directory) => {
 					if (!directory.canceled) {
-						selectedFolder.value = directory.filePaths;
+						selectedFolder.value = directory.filePaths[0];
 					}
 				})
 		}
@@ -133,7 +133,7 @@ export default {
 			fileList: [],
 			groupedFiles: [],
 			selectedFiles: '',
-			folderContent: this.selectedFolder.lenght ? fs.readdirSync(this.selectedFolder[0]) : null
+			folderContent: this.selectedFolder.lenght ? fs.readdirSync(this.selectedFolder) : null
 		}
 	},
 
@@ -144,17 +144,19 @@ export default {
 
 			if (Object.keys(this.selectedFolder).length) {
 				this.selectedFiles = '';
-				this.fileList = fs.readdirSync(this.selectedFolder[0])
+				this.fileList = fs.readdirSync(this.selectedFolder)
 				 
 				// Creo un array in cui ogni file è classificato
 				// in modo tale da poter raggruppare file successivamente
 				let classifiedFilesList = []
 				this.fileList.forEach(element => {
-					// Trovo il nome del file
-					let fileName = path.basename(element, path.extname(element))
-					let extName = path.extname(element)
-					// Aggiungo il file all'array con le classificazioni
-					classifiedFilesList.push({ name: fileName, ext: extName })
+					if (!fs.IsDirectory(path.join(this.selectedFolder, element))) {
+						// Trovo il nome del file
+						let fileName = path.basename(element, path.extname(element))
+						let extName = path.extname(element)
+						// Aggiungo il file all'array con le classificazioni
+						classifiedFilesList.push({ name: fileName, ext: extName })
+					}
 				});
 
 				// Raggruppo l'array per filename
