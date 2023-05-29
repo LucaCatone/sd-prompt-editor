@@ -30,11 +30,14 @@ yarn format
 npm run format
 ```
 
-
+### Build the app for production
+```bash
+npm run electron:dev
+```
 
 ### Build the app for production
 ```bash
-quasar build
+npm run electron:build
 ```
 
 ### Customize the configuration
