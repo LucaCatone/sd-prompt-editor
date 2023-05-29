@@ -40,5 +40,5 @@ npm run electron:dev
 npm run electron:build
 ```
 
-### Customize the configuration
-See [Configuring quasar.config.js](https://v2.quasar.dev/quasar-cli-vite/quasar-config-js).
+### Under construction
+the readme is still being written
