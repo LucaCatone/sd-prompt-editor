@@ -4,7 +4,7 @@
 		<div class="row" style="min-height: inherit;">
 			<div class="col flex flex-center" v-if="images.length" style="min-height: inherit;">
 				<div class="col" v-for="(image, index) in images" :key="index">
-					<img fit="contain" style="width:100%" :src="'file:/' + selectedFolder+'\\'+image.name+image.ext" alt="">
+					<img fit="contain" style="width:100%" :src="ImageUrlBuilder(image)" alt="">
 				</div>
 			</div>
 
@@ -63,35 +63,39 @@ export default defineComponent({
 			this.selectedFiles.forEach(element => {
 				var mimeType = mime.lookup(element.ext)
 				// Se è un immagine (qualsiasi)
-				if (mimeType.startsWith('image/')) {
-					this.images.push(element);
-				
-				} else if (mimeType == 'text/plain') {
-					var content = fs.readFileSync(this.selectedFolder +'\\' + element.name + element.ext, 'utf-8')
-
-					this.txtFile.push({
-						file: element,
-						content: content
-					});
-
-					this.txtContent = content
+				if (mimeType) {
+					if (mimeType.startsWith('image/')) {
+						this.images.push(element);
+					
+					} else if (mimeType == 'text/plain') {
+						var content = fs.readFileSync(path.join(this.selectedFolder, element.name + element.ext), 'utf-8')
+	
+						this.txtFile.push({
+							file: element,
+							content: content
+						});
+	
+						this.txtContent = content
+					}
 				}
 			});
 		},
 
 		txtContent() {
 			if (this.txtFile.length) {
-				fs.writeFileSync(this.selectedFolder +'\\' + this.txtFile[0].file.name + this.txtFile[0].file.ext, this.txtContent)
+				fs.writeFileSync(path.join(this.selectedFolder, this.txtFile[0].file.name + this.txtFile[0].file.ext), this.txtContent)
 			} else {
 				if (this.images.length) {
-					fs.writeFileSync(this.selectedFolder +'\\' + this.images[0].name + '.txt', this.txtContent)
+					fs.writeFileSync(path.join(this.selectedFolder, this.images[0].name + '.txt'), this.txtContent)
 				}
 			}
 		}
 	},
 
 	methods: {
-		
+		ImageUrlBuilder(image) {
+			return url.pathToFileURL(path.join(this.selectedFolder, image.name + image.ext))
+		}
 	}
 
 })
